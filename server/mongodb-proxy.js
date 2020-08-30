@@ -130,7 +130,9 @@ app.all('/query', function(req, res, next)
     // Parse query string in target
     substitutions = { "$from" : new Date(req.body.range.from),
                       "$to" : new Date(req.body.range.to),
-                      "$dateBucketCount" : getBucketCount(req.body.range.from, req.body.range.to, req.body.intervalMs)
+                      "$dateBucketCount" : getBucketCount(req.body.range.from, req.body.range.to, req.body.intervalMs),
+                      "$_last24" : new Date(new Date().getTime()-(24*60*60*1000)),
+                      "$_last36" : new Date(new Date().getTime()-(36*60*60*1000))
                      }
 
     // Generate an id to track requests
@@ -143,6 +145,7 @@ app.all('/query', function(req, res, next)
     for ( var queryId = 0; queryId < req.body.targets.length && !error; queryId++)
     {
       tg = req.body.targets[queryId]
+      console.log(tg.target);
       queryArgs = parseQuery(tg.target, substitutions)
       queryArgs.type = tg.type
       if (queryArgs.err != null)
@@ -174,7 +177,7 @@ var serverConfig = config.get('server');
 
 app.listen(serverConfig.port);
 
-console.log("Server is listening on port " + serverConfig.port);
+console.log("DBProxy Server is listening on port " + serverConfig.port);
 
 function setCORSHeaders(res) 
 {
@@ -208,7 +211,6 @@ function parseQuery(query, substitutions)
     queryErrors.push("Query must start with db.")
     return null
   }
-
   // Query is of the form db.<collection>.aggregate or db.<collection>.find
   // Split on the first ( after db.
   var openBracketIndex = query.indexOf('(', 3)
